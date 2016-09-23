@@ -2,7 +2,8 @@ from PIL import Image, ImageDraw, ImageFont
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
-import scipy.misc, scipy.io
+import scipy.misc, scipy.io as sio
+from random import randint
 
 # Use this class instead of enumeration.
 class ImageOrientation:
@@ -28,11 +29,26 @@ def stack_images(images, orientation=ImageOrientation.Horizontal):
     if orientation is ImageOrientation.Vertical:
         raise NotImplementedError
 
-def get_random_image_part(image):
-    raise NotImplementedError
+def get_random_image_part(image, square_side):
+    width = image.size[0]
+    height = image.size[1]
+    left = randint(0, width - square_side)
+    top = randint(0, height - square_side)
+    image_part = Image.new('RGB', (square_side, square_side))
+    box = (left, top, left+square_side, top+square_side)
+    region = image.crop(box)
+    image_part.paste(region)
+    drawer = ImageDraw.Draw(image)
+    drawer.rectangle(box, 'red', 'red')
+    # Writing mean value.
+    image_part_data = np.array(image_part)
+    mean = round(image_part_data[:,:].mean(), 2)
+    font = ImageFont.truetype('test.ttf', 40)
+    drawer.text((left, top), str(mean), (255,255,255), font)
+    
+    return image_part
 
-def getFig():
-    fig = plt.figure()
+def get_axes():
     ax = []
 
     ax.append(plt.subplot2grid((3,5), (0,0), rowspan=3,colspan=3))
@@ -42,83 +58,61 @@ def getFig():
     ax.append(plt.subplot2grid((3,5), (1,4)))
     ax.append(plt.subplot2grid((3,5), (2,3)))
     ax.append(plt.subplot2grid((3,5), (2,4)))
-    return fig,ax
+    return ax
 
-def doubleImageRecuder(im):
-    image = np.array(im)
-    print image.shape
-
-    image = im.resize((image.shape[1] / 2, image.shape[0] / 2))
-    return image
+def reduce_image_twice(image):
+    reduced_image = np.array(image)
+    reduced_image = image.resize((reduced_image.shape[1] / 2, reduced_image.shape[0] / 2))
+    return reduced_image
 
 def RunAssignment():
-    fig, ax = getFig()
+    ax = get_axes()
     
     face = Image.fromarray(scipy.misc.face()) 
     miet = Image.open('miet.jpeg')
     
     main_image = stack_images([miet, face])
-
-    square_side = 200
-    im1_x = 0
-    im1_y = -400
-    im2_x = -1000
-    im2_y = 0
     
-    im1 = Image.new('RGB', (square_side, square_side))
-    im1.paste(main_image, (im1_x,im1_y))
-    im2 = Image.new('RGB', (square_side, square_side))
-    im2.paste(main_image, (im2_x,im2_y))
+    # Images may be overlayed due to random.
+    image_part_1 = get_random_image_part(main_image, 300)
+    image_part_2 = get_random_image_part(main_image, 200)
     
-    dr = ImageDraw.Draw(main_image)
-    
-    dr.rectangle([(im1_x, im1_y*(-1)) ,(im1_x+square_side, im1_y*(-1)+square_side)], 'red', 'red')
-    dr.rectangle([(im2_x*(-1), im2_y) ,(im2_x*(-1)+square_side, im2_y+square_side)], 'red', 'red')
-    
-    font = ImageFont.truetype('test.ttf', 40)
-    
-    im1_arr = np.array(im1)
-    im2_arr = np.array(im2)
-
-    mean1 = im1_arr[:,:].mean()
-    mean2 = im2_arr[:,:].mean()
-    
-    dr.text((im1_x, im1_y*(-1)), str(mean1) , (255,255,255), font)    
-    dr.text((im2_x*(-1), im2_y), str(mean2) , (255,255,255), font)    
-    
-    
-    im3 = doubleImageRecuder(main_image);
-    im4 = doubleImageRecuder(im3);
-    im5 = doubleImageRecuder(im4);
-    im6 = doubleImageRecuder(im5);
-    
-    file = open('image_backup.pkl','rb')
-    im = pickle.load(file)
-    file.close()
-        
-    ax[0].imshow(main_image)
     ax[0].axis('off')
+    ax[0].imshow(main_image)
     ax[1].axis('off')
-    ax[1].imshow(im1)
+    ax[1].imshow(image_part_1)
     ax[2].axis('off')
-    ax[2].imshow(im2)
-    ax[3].axis('off')
-    ax[3].imshow(im3)
-    ax[4].axis('off')
-    ax[4].imshow(im4)
-    ax[5].axis('off')
-    ax[5].imshow(im5)
-    ax[6].axis('off')
-    ax[6].imshow(im6)
+    ax[2].imshow(image_part_2)
     
-    backup_objects = [main_image, mean1, mean2, im1, im2]
-        
-    file = open('image_backup.pkl','wb')
-    pickle.dump(backup_objects, file)
-    file.close()
+    reduced_image = main_image
+    for x in range(3, 7):
+        reduced_image = reduce_image_twice(reduced_image);
+        ax[x].axis('off')
+        ax[x].imshow(reduced_image)
     
-        
-    plt.savefig("image.jpg")
+    # Saving picture as an image.
+    plt.savefig('image.jpg')
+    
+    # Saving the main image, its mean value and the other images.
+    with open('image_backup.pkl','wb') as backup_file:
+        main_image_data = np.array(main_image)
+        main_image_mean = main_image_data[:,:].mean()
+        pickle.dump([main_image, main_image_mean, image_part_1, image_part_2], backup_file)
+    
+    # Saving data into mat file.
+    sio.savemat('data_backup.mat', {'main_image_data': main_image_data, 
+                                    'main_image_mean': main_image_mean})
+    
+    # Just for testing pickle loading.
+    # with open('image_backup.pkl','rb') as backup_file:
+    #     [main_image, main_image_mean, image_part_1, image_part_2] = pickle.load(backup_file)
+    #         
+    # ax[0].axis('off')
+    # ax[0].imshow(main_image)
+    # ax[1].axis('off')
+    # ax[1].imshow(image_part_1)
+    # ax[2].axis('off')
+    # ax[2].imshow(image_part_2)
     
     plt.show()
     
