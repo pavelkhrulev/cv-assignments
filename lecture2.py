@@ -43,7 +43,7 @@ def get_random_image_part(image, square_side):
     # Writing mean value.
     image_part_data = np.array(image_part)
     mean = round(image_part_data[:,:].mean(), 2)
-    font = ImageFont.truetype('test.ttf', 40)
+    font = ImageFont.truetype('Fonts/test.ttf', 40)
     drawer.text((left, top), str(mean), (255,255,255), font)
     
     return image_part
@@ -69,7 +69,7 @@ def RunAssignment():
     ax = get_axes()
     
     face = Image.fromarray(scipy.misc.face()) 
-    miet = Image.open('miet.jpeg')
+    miet = Image.open('ImageFolder/miet.jpeg')
     
     main_image = stack_images([miet, face])
     
