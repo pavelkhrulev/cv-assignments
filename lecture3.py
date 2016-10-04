@@ -68,6 +68,8 @@ def RunAssignment():
     # Drawing real output image histogram.
     ax[3].hist(output_image_data.flatten(), bins_count)
     
+    plt.savefig('lecture3_result.jpg')
+    
     plt.gray()
     plt.show()
     
