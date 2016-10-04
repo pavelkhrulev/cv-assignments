@@ -1,9 +1,6 @@
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 import matplotlib.pyplot as plt
 import numpy as np
-import pickle
-import scipy.misc, scipy.io as sio
-from random import randint
 
 """ Histogram equalization of a grayscale image. """ 
 def histogram_equalization(im,nbr_bins=256):
