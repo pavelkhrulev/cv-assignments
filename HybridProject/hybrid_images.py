@@ -133,7 +133,7 @@ if __name__ == "__main__":
     You can use helper task for creating video that includes many frames
     with different sigma values and choose the one.
     '''
-    #helper_task()
+    #helper_task(low_pass_image, high_pass_image)
     
     main_task(low_pass_image, high_pass_image)
     
